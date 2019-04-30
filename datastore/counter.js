@@ -38,9 +38,19 @@ const writeCounter = (count, callback) => {
 
 // Public API - Fix this function //////////////////////////////////////////////
 
-exports.getNextUniqueId = () => {
-  counter = counter + 1;
-  return zeroPaddedNumber(counter);
+exports.getNextUniqueId = (callback) => {
+  // Input: callback function - but what does it do?
+  // Call readCounter, passing in CB
+  // ReadCounter will give us the current counter value
+  // We increment the counter value, then write this value to file using writeCounter
+  // Then we return the zeroPaddedNumber value of the incremented counter
+
+  var incrementCount = (err, counter) => {
+    var count = counter + 1;
+    writeCounter(count, callback);
+  };
+
+  readCounter(incrementCount);
 };
 
 
