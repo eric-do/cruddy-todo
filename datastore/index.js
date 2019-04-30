@@ -16,30 +16,46 @@ exports.create = (text, callback) => {
   counter.getNextUniqueId((err, fileName) => {
     if (err) { throw "Error"; }
     var filepath = path.join(exports.dataDir, `${fileName}.txt`);
+    console.log(`Creating: ${fileName}.txt \n${text}\n`);
     fs.writeFile(filepath, text, err => {
+      console.log(`Done: ${fileName}.txt \n${text}\n`);
       if (err) { throw "Error"; }
-      callback(err, {
+      var todo = {
         id: fileName,
         text: text
-      });
+      };
+      callback(err, todo);
     });
   });
 };
 
 exports.readAll = (callback) => {
-  var data = _.map(items, (text, id) => {
-    return { id, text };
+  var files = fs.readdirSync(exports.dataDir);
+  console.log(files);
+  var filesArr = files.map(file => {
+    var basename = path.basename(file, '.txt');
+    return {
+      id: basename,
+      text: basename
+    };
   });
-  callback(null, data);
+  callback(null, filesArr);
 };
 
 exports.readOne = (id, callback) => {
   var text = items[id];
-  if (!text) {
-    callback(new Error(`No item with id: ${id}`));
-  } else {
-    callback(null, { id, text });
-  }
+  exports.readAll(err, files => {
+    console.log(files);
+    var found = files.find(element => {
+      console.log("ElementID: " + element.id + " id: " + id);
+      return element.id === id;
+    });
+    if (!found) {
+      callback(new Error(`No item with id: ${id}`));
+    }
+    console.log(found);
+    callback(null, found);
+  });
 };
 
 exports.update = (id, text, callback) => {
