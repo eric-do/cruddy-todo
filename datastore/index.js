@@ -13,17 +13,15 @@ exports.create = (text, callback) => {
   //  Put todo text into file
 
   counter.getNextUniqueId((err, fileName) => {
-    if (err) { throw "Error"; }
+    if (err) { return callback(err); }
     var filepath = path.join(exports.dataDir, `${fileName}.txt`);
-    //console.log(`Creating: ${fileName}.txt \n${text}\n`);
     fs.writeFile(filepath, text, err => {
-      //console.log(`Done: ${fileName}.txt \n${text}\n`);
-      if (err) { throw "Error"; }
+      if (err) { return callback(err); }
       var todo = {
         id: fileName,
         text: text
       };
-      callback(err, todo);
+      callback(null, todo);
     });
   });
 };
@@ -42,42 +40,42 @@ exports.readAll = (callback) => {
 
 exports.readOne = (id, callback) => {
   exports.readAll((err, files) => {
+    if (err) { return callback(err); }
     var found = files.find(element => {
       return element.id === id;
     });
     if (found) {
       var filepath = path.join(exports.dataDir,`${id}.txt`);
       fs.readFile(filepath, (err, data) => {
-        if (err) {
-          callback( new Error ("Error reading file")); 
-        }
+        if (err) { return callback(err); }
         found.text = data.toString('utf8');
         callback(null, found);
       });
-    }
-    else { callback( new Error ("Error reading file")); }
+    } else { callback( new Error ("Error reading file")); }
   });
 };
 
 exports.update = (id, text, callback) => {
-  var item = items[id];
-  if (!item) {
-    callback(new Error(`No item with id: ${id}`));
-  } else {
-    items[id] = text;
-    callback(null, { id, text });
-  }
+  exports.readOne(id, (err, data) => {
+    if (err) { return callback(err); }
+    data.text = text;
+    var filepath = path.join(exports.dataDir, `${id}.txt`);
+    fs.writeFile(filepath, text, (err, data) => {
+      if (err) { return callback(err); }
+      callback(null, data);
+    });
+  });
 };
 
 exports.delete = (id, callback) => {
-  var item = items[id];
-  delete items[id];
-  if (!item) {
-    // report an error if item not found
-    callback(new Error(`No item with id: ${id}`));
-  } else {
-    callback();
-  }
+  exports.readOne(id, (err, data) => {
+    if (err) { return callback(err); }
+    var filepath = path.join(exports.dataDir, `${id}.txt`);
+    fs.unlink(filepath, err => {
+      if (err) { return callback(err); }
+      callback(null);
+    })
+  });
 };
 
 // Config+Initialization code -- DO NOT MODIFY /////////////////////////////////
