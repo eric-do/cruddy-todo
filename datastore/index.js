@@ -4,7 +4,6 @@ const _ = require('underscore');
 const counter = require('./counter');
 
 var items = {};
-
 // Public API - Fix these CRUD functions ///////////////////////////////////////
 
 exports.create = (text, callback) => {
@@ -16,9 +15,9 @@ exports.create = (text, callback) => {
   counter.getNextUniqueId((err, fileName) => {
     if (err) { throw "Error"; }
     var filepath = path.join(exports.dataDir, `${fileName}.txt`);
-    console.log(`Creating: ${fileName}.txt \n${text}\n`);
+    //console.log(`Creating: ${fileName}.txt \n${text}\n`);
     fs.writeFile(filepath, text, err => {
-      console.log(`Done: ${fileName}.txt \n${text}\n`);
+      //console.log(`Done: ${fileName}.txt \n${text}\n`);
       if (err) { throw "Error"; }
       var todo = {
         id: fileName,
@@ -31,30 +30,32 @@ exports.create = (text, callback) => {
 
 exports.readAll = (callback) => {
   var files = fs.readdirSync(exports.dataDir);
-  console.log(files);
   var filesArr = files.map(file => {
     var basename = path.basename(file, '.txt');
     return {
       id: basename,
       text: basename
     };
-  });
+  });  
   callback(null, filesArr);
 };
 
 exports.readOne = (id, callback) => {
-  var text = items[id];
-  exports.readAll(err, files => {
-    console.log(files);
+  exports.readAll((err, files) => {
     var found = files.find(element => {
-      console.log("ElementID: " + element.id + " id: " + id);
       return element.id === id;
     });
-    if (!found) {
-      callback(new Error(`No item with id: ${id}`));
+    if (found) {
+      var filepath = path.join(exports.dataDir,`${id}.txt`);
+      fs.readFile(filepath, (err, data) => {
+        if (err) {
+          callback( new Error ("Error reading file")); 
+        }
+        found.text = data.toString('utf8');
+        callback(null, found);
+      });
     }
-    console.log(found);
-    callback(null, found);
+    else { callback( new Error ("Error reading file")); }
   });
 };
 
