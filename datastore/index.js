@@ -2,6 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const _ = require('underscore');
 const counter = require('./counter');
+var Promise = require('bluebird');
+var fsAync = Promise.promisifyAll(fs);
 
 var items = {};
 // Public API - Fix these CRUD functions ///////////////////////////////////////
@@ -27,15 +29,36 @@ exports.create = (text, callback) => {
 };
 
 exports.readAll = (callback) => {
-  var files = fs.readdirSync(exports.dataDir);
-  var filesArr = files.map(file => {
-    var basename = path.basename(file, '.txt');
-    return {
-      id: basename,
-      text: basename
-    };
-  });  
-  callback(null, filesArr);
+  // Input: a callback function
+  // Read file directory passing in an anon function
+  // Create a new array
+  // For each file read
+  //  Define basename and filepath
+  //  Return a new promise made from
+  //   fs.readFile
+  //   resolve into an object with id and text
+  // Run promise.all on the new array, 
+  // execute callback on the aggregated result
+  fs.readdir(exports.dataDir, (err, fileArr) => {
+    if (err) { return callback(err); }
+    var promises = fileArr.map(file => {
+      var basename = path.basename(file, '.txt');
+      var filepath = path.join(exports.dataDir, file);
+
+      return new Promise((resolve, reject) => {
+        fs.readFile(filepath, 'utf8', (err, data) => {
+          if (err) { reject(err); }
+          resolve({
+            id: basename,
+            text: data
+          });
+        });
+      });
+    });
+    Promise.all(promises).then(result => {
+      callback(null, result);
+    });
+  });
 };
 
 exports.readOne = (id, callback) => {
@@ -74,7 +97,7 @@ exports.delete = (id, callback) => {
     fs.unlink(filepath, err => {
       if (err) { return callback(err); }
       callback(null);
-    })
+    });
   });
 };
 
